@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">电视守护者</string>
+    <string name="home_title">📺 电视守护者</string>
+    <string name="home_subtitle">每 20 分钟学习一下，保护你的眼睛与成绩</string>
+    <string name="next_quiz_label">下次弹题：</string>
+    <string name="round_label">已完成轮次：</string>
+    <string name="wrong_label">累计错误：</string>
+    <string name="start_quiz_btn">立即测试</string>
+    <string name="wrong_list_btn">错题本</string>
+    <string name="quiz_title">学习时间到！</string>
+    <string name="quiz_subtitle">回答正确继续看电视，错误太多要休息哦</string>
+    <string name="submit_btn">提交答案</string>
+    <string name="result_title">答题完成！</string>
+    <string name="lock_title">⚠️ 需要休息了</string>
+    <string name="lock_reason">错误次数过多，请休息 20 分钟</string>
+    <string name="lock_hint">倒计时结束后才能继续使用，看看窗外，活动一下吧</string>
+    <string name="setting_interval">弹题间隔(分钟)</string>
+    <string name="setting_questions_per_round">每轮题数</string>
+    <string name="setting_max_wrong">最大错误数</string>
+    <string name="setting_lock_minutes">锁定时长(分钟)</string>
+</resources>
