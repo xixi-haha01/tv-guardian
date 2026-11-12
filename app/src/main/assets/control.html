@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>📺 电视守护者 - 手机控制</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+    color: #fff;
+    min-height: 100vh;
+    padding: 16px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  h1 { font-size: 22px; text-align: center; margin-bottom: 4px; color: #ffd54f; }
+  .subtitle { text-align: center; font-size: 13px; color: #9fa8da; margin-bottom: 20px; }
+
+  .card {
+    background: rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 16px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .card-title { font-size: 14px; color: #90caf9; margin-bottom: 12px; font-weight: 600; }
+
+  /* 状态区 */
+  .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .status-item {
+    background: rgba(0,0,0,0.2);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+  }
+  .status-item .val { font-size: 20px; font-weight: bold; color: #fff; }
+  .status-item .lbl { font-size: 12px; color: #9fa8da; margin-top: 4px; }
+  .status-item.warn .val { color: #ff5252; }
+  .status-item.ok .val { color: #69f0ae; }
+  .status-item.gold .val { color: #ffd740; }
+
+  /* 按钮 */
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+    margin-bottom: 10px;
+    color: #fff;
+  }
+  .btn:active { transform: scale(0.97); opacity: 0.8; }
+  .btn-primary { background: #1976d2; }
+  .btn-success { background: #388e3c; }
+  .btn-danger { background: #d32f2f; }
+  .btn-warn   { background: #f57c00; }
+  .btn-ghost  { background: rgba(255,255,255,0.12); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-row { display: flex; gap: 10px; }
+  .btn-row .btn { flex: 1; margin-bottom: 0; }
+
+  /* 设置表单 */
+  .form-row { display: flex; align-items: center; margin-bottom: 12px; gap: 10px; }
+  .form-row label { flex: 0 0 110px; font-size: 14px; color: #e0e0e0; }
+  .form-row input[type="number"] {
+    flex: 1;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: #fff;
+    font-size: 15px;
+    min-width: 0;
+  }
+  .form-row input[type="number"]:focus { outline: none; border-color: #42a5f5; }
+
+  /* 错题列表 */
+  .wrong-item {
+    background: rgba(255,82,82,0.12);
+    border-left: 3px solid #ff5252;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .wrong-item .meta { color: #ffab91; font-size: 11px; margin-bottom: 4px; }
+  .wrong-item .q { color: #fff; margin-bottom: 4px; }
+  .wrong-item .ans { color: #a5d6a7; font-size: 12px; }
+
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.85);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  .refresh-btn {
+    font-size: 12px;
+    color: #64b5f6;
+    text-align: center;
+    padding: 6px;
+  }
+  .refresh-btn:active { opacity: 0.7; }
+
+  /* 锁状态横幅 */
+  .lock-banner {
+    background: linear-gradient(90deg, #b71c1c, #d32f2f);
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+    margin-bottom: 16px;
+    font-size: 15px;
+    display: none;
+  }
+  .lock-banner.show { display: block; }
+  .lock-banner .countdown { font-size: 28px; font-weight: bold; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<h1>📺 电视守护者</h1>
+<p class="subtitle">手机远程控制面板</p>
+
+<!-- 锁定横幅 -->
+<div class="lock-banner" id="lockBanner">
+  🚫 电视当前处于锁定状态
+  <div class="countdown" id="lockCountdown">--:--</div>
+  <button class="btn btn-success" onclick="unlock()" style="margin-top:10px;">🗝️ 立即解锁</button>
+</div>
+
+<!-- 状态卡片 -->
+<div class="card">
+  <div class="card-title">📊 当前状态</div>
+  <div class="status-grid">
+    <div class="status-item ok"><div class="val" id="sRound">0</div><div class="lbl">已完成轮次</div></div>
+    <div class="status-item" id="sWrongBox"><div class="val" id="sWrong">0/10</div><div class="lbl">累计错误</div></div>
+    <div class="status-item gold"><div class="val" id="sNext">--</div><div class="lbl">下次弹题</div></div>
+    <div class="status-item"><div class="val" id="sLockMin">20</div><div class="lbl">锁定时长(分)</div></div>
+  </div>
+  <div class="refresh-btn" onclick="refreshAll()">🔄 点击刷新</div>
+</div>
+
+<!-- 快捷操作 -->
+<div class="card">
+  <div class="card-title">⚡ 快捷操作</div>
+  <button class="btn btn-primary" onclick="triggerQuiz()">📚 立即弹题（让孩子现在答题）</button>
+  <button class="btn btn-danger" onclick="lockDevice()">🔒 立即锁定电视（强制休息）</button>
+  <button class="btn btn-success" onclick="unlock()">🗝️ 解除锁定（孩子承认错误后）</button>
+  <button class="btn btn-warn" onclick="resetWrong()">♻️ 重置错误计数</button>
+</div>
+
+<!-- 设置 -->
+<div class="card">
+  <div class="card-title">⚙️ 守护者设置</div>
+  <div class="form-row">
+    <label>弹题间隔</label>
+    <input type="number" id="fInterval" min="1" max="240" placeholder="分钟">
+  </div>
+  <div class="form-row">
+    <label>每轮题数</label>
+    <input type="number" id="fPerRound" min="1" max="20" placeholder="道">
+  </div>
+  <div class="form-row">
+    <label>触发锁定</label>
+    <input type="number" id="fMaxWrong" min="1" max="100" placeholder="错误数">
+  </div>
+  <div class="form-row">
+    <label>锁定时长</label>
+    <input type="number" id="fLockMin" min="1" max="120" placeholder="分钟">
+  </div>
+  <button class="btn btn-primary" onclick="saveSettings()">💾 保存设置</button>
+</div>
+
+<!-- 题库管理 -->
+<div class="card">
+  <div class="card-title">📚 题库管理（手机远程更新）</div>
+  <div class="status-grid">
+    <div class="status-item gold"><div class="val" id="qVersion">默认</div><div class="lbl">题库版本</div></div>
+    <div class="status-item"><div class="val" id="qTotal">--</div><div class="lbl">总题数</div></div>
+    <div class="status-item ok"><div class="val" id="qMath">--</div><div class="lbl">数学</div></div>
+    <div class="status-item"><div class="val" id="qChiEng">--</div><div class="lbl">语/英合计</div></div>
+  </div>
+
+  <div style="font-size:12px;color:#9fa8da;margin:14px 0 8px;">
+    📝 上传新题库：粘贴完整 JSON（结构同默认题库：math/chinese/english 三个 key，每科下含 grade3/4/5，每道题需 q 题干、options 4 个选项、ans 正确答案索引 0-3）
+  </div>
+  <textarea id="qJsonInput"
+    style="width:100%;height:140px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.15);border-radius:8px;color:#fff;font-size:12px;padding:10px;font-family:monospace;resize:vertical;"
+    placeholder='{
+  "math": {"grade3": [...], "grade4": [...], "grade5": [...]},
+  "chinese": {"grade3": [...], "grade4": [...], "grade5": [...]},
+  "english": {"grade3": [...], "grade4": [...], "grade5": [...]}
+}'
+  ></textarea>
+
+  <div class="btn-row" style="margin-top:12px;">
+    <button class="btn btn-primary" onclick="uploadQuestions()" style="margin-bottom:0;">✅ 上传新题库</button>
+    <button class="btn btn-ghost" onclick="resetQuestions()" style="margin-bottom:0;">🔄 恢复默认</button>
+  </div>
+</div>
+
+<!-- 错题本 -->
+<div class="card">
+  <div class="card-title">📖 高频错题本（前30）</div>
+  <div id="wrongListContainer"><div class="subtitle">加载中...</div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ===== API 基础 =====
+  const BASE = location.origin;  // 电视端就是自己
+  const $ = id => document.getElementById(id);
+
+  async function api(path, method = 'GET', body = null) {
+    const opts = { method, headers: {} };
+    if (body) {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(body);
+    }
+    const res = await fetch(BASE + path, opts);
+    return res.json();
+  }
+
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  // ===== 刷新所有 =====
+  async function refreshAll() {
+    try {
+      const s = await api('/api/status');
+      renderStatus(s);
+
+      const set = await api('/api/settings');
+      renderSettings(set);
+
+      const w = await api('/api/wrong');
+      renderWrong(w.list || []);
+
+      const q = await api('/api/questions');
+      renderQuestionsInfo(q);
+    } catch (e) {
+      toast('连接电视失败：' + e.message);
+    }
+  }
+
+  function renderQuestionsInfo(info) {
+    if (info.custom) {
+      $('qVersion').textContent = '自定义 v' + info.version;
+      $('qVersion').style.color = '#ff6b6b';
+    } else {
+      $('qVersion').textContent = '内置 v0';
+      $('qVersion').style.color = '#ffd740';
+    }
+    $('qTotal').textContent = info.total;
+    $('qMath').textContent = info.per_subject.math;
+    $('qChiEng').textContent = (info.per_subject.chinese || 0) + ' / ' + (info.per_subject.english || 0);
+  }
+
+  function renderStatus(s) {
+    $('sRound').textContent = s.round_count || 0;
+
+    const wbox = $('sWrongBox');
+    const val = s.total_wrong + '/' + s.max_wrong;
+    $('sWrong').textContent = val;
+    wbox.className = 'status-item ' + (s.total_wrong >= s.max_wrong ? 'warn' : '');
+
+    // 下次弹题倒计时
+    const nextSec = s.next_quiz_seconds || 0;
+    if (nextSec > 0) {
+      const m = Math.floor(nextSec / 60), sec = nextSec % 60;
+      $('sNext').textContent = m + '分' + (sec < 10 ? '0' : '') + sec + '秒';
+    } else {
+      $('sNext').textContent = '即将弹题';
+    }
+
+    $('sLockMin').textContent = s.lock_minutes;
+
+    // 锁定横幅
+    const banner = $('lockBanner');
+    if (s.locked) {
+      banner.classList.add('show');
+      const r = s.lock_remain_seconds || 0;
+      const mm = Math.floor(r / 60), ss = r % 60;
+      $('lockCountdown').textContent =
+        (mm < 10 ? '0' : '') + mm + ':' + (ss < 10 ? '0' : '') + ss;
+    } else {
+      banner.classList.remove('show');
+    }
+  }
+
+  function renderSettings(s) {
+    $('fInterval').value = s.interval_minutes;
+    $('fPerRound').value = s.questions_per_round;
+    $('fMaxWrong').value = s.max_wrong_before_lock;
+    $('fLockMin').value = s.lock_minutes;
+  }
+
+  function renderWrong(list) {
+    const box = $('wrongListContainer');
+    if (!list.length) {
+      box.innerHTML = '<div class="subtitle">🎉 太棒了！还没有错题</div>';
+      return;
+    }
+    box.innerHTML = list.map(w => `
+      <div class="wrong-item">
+        <div class="meta">【${w.subject}${w.grade}】 错 ${w.wrong_count} 次</div>
+        <div class="q">${w.question}</div>
+        <div class="ans">✓ 正确答案: ${w.answer}</div>
+      </div>
+    `).join('');
+  }
+
+  // ===== 动作 =====
+  async function triggerQuiz() {
+    const r = await api('/api/quiz', 'POST');
+    toast(r.ok ? '📚 已触发答题！' : (r.reason || '失败'));
+  }
+
+  async function lockDevice() {
+    if (!confirm('确认立即锁定电视？强制休息 ' + ($('fLockMin').value || 20) + ' 分钟')) return;
+    const r = await api('/api/lock', 'POST', { minutes: parseInt($('fLockMin').value) || 20 });
+    toast(r.ok ? '🔒 已锁定' : '失败');
+    refreshAll();
+  }
+
+  async function unlock() {
+    if (!confirm('确认解除锁定？')) return;
+    const r = await api('/api/unlock', 'POST');
+    toast(r.ok ? '🗝️ 已解锁' : '失败');
+    refreshAll();
+  }
+
+  async function resetWrong() {
+    if (!confirm('确认重置错误计数？')) return;
+    const r = await api('/api/reset', 'POST');
+    toast(r.ok ? '已重置' : '失败');
+    refreshAll();
+  }
+
+  async function saveSettings() {
+    const body = {
+      interval_minutes: parseInt($('fInterval').value),
+      questions_per_round: parseInt($('fPerRound').value),
+      max_wrong_before_lock: parseInt($('fMaxWrong').value),
+      lock_minutes: parseInt($('fLockMin').value)
+    };
+    const r = await api('/api/settings', 'POST', body);
+    toast(r.ok ? '✅ 设置已保存' : '保存失败');
+    refreshAll();
+  }
+
+  // ===== 题库管理 =====
+  async function uploadQuestions() {
+    const body = $('qJsonInput').value.trim();
+    if (!body) { toast('请先粘贴题库 JSON'); return; }
+    // 先本地校验 JSON 语法
+    let parsed;
+    try { parsed = JSON.parse(body); } catch { toast('❌ JSON 语法错误，请检查'); return; }
+    if (!confirm('确认上传新题库？会替换当前生效的题库')) return;
+    const r = await api('/api/questions', 'POST', parsed);
+    if (r.ok) {
+      toast(r.message || '✅ 上传成功');
+      $('qJsonInput').value = '';
+      refreshAll();
+    } else {
+      toast('❌ ' + (r.error || '上传失败'));
+    }
+  }
+
+  async function resetQuestions() {
+    if (!confirm('确认恢复默认题库？手机上传的自定义题库会被清除')) return;
+    const r = await api('/api/questions/default', 'POST');
+    toast(r.message || (r.ok ? '✅ 已恢复默认' : '失败'));
+    refreshAll();
+  }
+
+  // ===== 启动 =====
+  refreshAll();
+  setInterval(refreshAll, 5000);
+</script>
+
+</body>
+</html>
