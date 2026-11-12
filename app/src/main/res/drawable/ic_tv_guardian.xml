@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 电视屏幕 -->
+    <path
+        android:fillColor="#FF42A5F5"
+        android:pathData="M20,28 L88,28 C92.42,28 96,31.58 96,36 L96,70 C96,74.42 92.42,78 88,78 L20,78 C15.58,78 12,74.42 12,70 L12,36 C12,31.58 15.58,28 20,28 Z" />
+    <!-- 支架 -->
+    <path
+        android:fillColor="#FF1565C0"
+        android:pathData="M38,78 L52,88 L52,94 L56,94 L56,88 L70,78 Z" />
+    <!-- 屏幕内容：星星/对勾 -->
+    <path
+        android:fillColor="#FFFFD54F"
+        android:pathData="M54,42 L58,50 L66,52 L58,54 L54,62 L50,54 L42,52 L50,50 Z" />
+</vector>
