@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="48dp"
+    android:background="@color/bg_dark"
+    android:gravity="center">
+
+    <!-- 标题 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/home_title"
+        android:textColor="@color/accent_gold"
+        android:textSize="56sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="12dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/home_subtitle"
+        android:textColor="@color/text_hint"
+        android:textSize="22sp"
+        android:layout_marginBottom="48dp" />
+
+    <!-- 状态卡片 -->
+    <LinearLayout
+        android:layout_width="720dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@color/bg_card"
+        android:padding="32dp"
+        android:layout_marginBottom="48dp">
+
+        <TextView
+            android:id="@+id/tv_next_quiz"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/accent_blue"
+            android:textSize="28sp"
+            android:text="⏰ 下次弹题：" />
+
+        <TextView
+            android:id="@+id/tv_round"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:textColor="@color/text_white"
+            android:textSize="24sp"
+            android:text="📋 已完成轮次：" />
+
+        <TextView
+            android:id="@+id/tv_wrong"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:textColor="#FFEF5350"
+            android:textSize="24sp"
+            android:text="❌ 累计错误：" />
+
+    </LinearLayout>
+
+    <!-- 按钮（TV D-pad 可聚焦） -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btn_start_quiz"
+            android:layout_width="260dp"
+            android:layout_height="80dp"
+            android:text="@string/start_quiz_btn"
+            android:textSize="24sp"
+            android:backgroundTint="@color/accent_blue"
+            android:textColor="@color/text_white"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:layout_marginEnd="32dp" />
+
+        <Button
+            android:id="@+id/btn_wrong_list"
+            android:layout_width="260dp"
+            android:layout_height="80dp"
+            android:text="@string/wrong_list_btn"
+            android:textSize="24sp"
+            android:backgroundTint="#FF66BB6A"
+            android:textColor="@color/text_white"
+            android:focusable="true"
+            android:focusableInTouchMode="true" />
+
+    </LinearLayout>
+
+    <!-- 运行提示 -->
+    <TextView
+        android:id="@+id/tv_hint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="48dp"
+        android:textColor="@color/text_hint"
+        android:textSize="18sp"
+        android:text="应用在后台运行，到时自动弹题" />
+
+</LinearLayout>
