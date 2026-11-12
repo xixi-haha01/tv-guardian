@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 允许在其他应用之上覆盖（用于锁定界面） -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- 手机远程控制需要 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+
+    <!-- 声明为 Leanback TV 应用 -->
+    <uses-feature
+        android:name="android.hardware.type.television"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.TVGuardian"
+        android:hardwareAccelerated="true"
+        android:usesCleartextTraffic="true">
+
+        <!-- 主界面（TV Launcher 入口） -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.TVGuardian">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 答题界面（全屏、不可退出） -->
+        <activity
+            android:name=".QuizActivity"
+            android:exported="false"
+            android:theme="@style/Theme.TVGuardian.FullScreen"
+            android:excludeFromRecents="true"
+            android:finishOnTaskLaunch="false" />
+
+        <!-- 锁定界面（全屏、防退出） -->
+        <activity
+            android:name=".LockActivity"
+            android:exported="false"
+            android:theme="@style/Theme.TVGuardian.Lock"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:finishOnTaskLaunch="false" />
+
+    </application>
+
+</manifest>
