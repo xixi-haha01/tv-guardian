@@ -228,7 +228,8 @@ class RemoteControlServer(
                 put("grade", wq.gradeName)
                 put("wrong_count", wq.wrong_count)
                 val labels = listOf("A", "B", "C", "D")
-                put("answer", labels.getOrElse(wq.ans) { "?" })
+                put("answer", wq.ans.sorted().joinToString { labels.getOrElse(it) { "?" } })
+                put("type", wq.type)
                 put("options", org.json.JSONArray(wq.options))
             })
         }
