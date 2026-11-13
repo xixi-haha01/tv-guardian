@@ -89,6 +89,9 @@ class MainActivity : AppCompatActivity(), RemoteControlServer.ActivityLauncher {
     private fun refreshUI() {
         val fmt = SimpleDateFormat("HH:mm:ss", Locale.CHINA)
 
+        // 检查观看时长限制
+        checkSessionLimit()
+
         // 下次弹题
         val nextTs = prefs.nextQuizTimestamp
         if (nextTs > 0) {
@@ -130,17 +133,48 @@ class MainActivity : AppCompatActivity(), RemoteControlServer.ActivityLauncher {
     // ==================== 状态检查 ====================
 
     private fun checkLockState() {
+        // 错题锁定
         if (prefs.isLocked) {
             val end = prefs.lockEndTimestamp
             if (System.currentTimeMillis() < end) {
                 startActivity(Intent(this, LockActivity::class.java))
                 finish()
+                return
             } else {
                 prefs.isLocked = false
                 prefs.totalWrongCount = 0
+                resetSessionTimer()
                 scheduleNextQuiz()
             }
         }
+        // 观看时长锁定
+        val sessionEnd = prefs.sessionLockEndTimestamp
+        if (sessionEnd > 0) {
+            if (System.currentTimeMillis() < sessionEnd) {
+                startActivity(Intent(this, LockActivity::class.java))
+                finish()
+            } else {
+                prefs.sessionLockEndTimestamp = 0L
+                resetSessionTimer()
+            }
+        }
+    }
+
+    /** 检查是否达到单次观看时长，达到则弹出答题 */
+    private fun checkSessionLimit() {
+        val limitMin = prefs.sessionLimitMinutes
+        if (limitMin <= 0 || prefs.isLocked) return
+        val elapsed = System.currentTimeMillis() - prefs.sessionStartTimestamp
+        val limitMs = limitMin * 60 * 1000L
+        if (elapsed >= limitMs) {
+            // 连续观看达到上限，弹出答题（答错继续答，答完重置计时）
+            startQuiz()
+        }
+    }
+
+    /** 重置观看时长计时（答题完成、解锁后调用） */
+    fun resetSessionTimer() {
+        prefs.sessionStartTimestamp = System.currentTimeMillis()
     }
 
     private fun checkAndTriggerQuiz() {
