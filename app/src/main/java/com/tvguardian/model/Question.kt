@@ -7,7 +7,8 @@ import kotlinx.serialization.Serializable
 data class Question(
     val q: String,
     val options: List<String>,
-    val ans: Int,
+    val ans: List<Int>,
+    val type: String = "single",  // "single" 单选 | "multiple" 多选
     val exp: String = "",
     val subject: String = "",
     val grade: String = "",
@@ -31,6 +32,12 @@ data class Question(
 
     val optionLabels: List<String>
         get() = listOf("A", "B", "C", "D")
+
+    val isMultiple: Boolean
+        get() = type == "multiple"
+
+    val typeLabel: String
+        get() = if (isMultiple) "【多选】" else "【单选】"
 }
 
 /** 题库 JSON 结构 */
