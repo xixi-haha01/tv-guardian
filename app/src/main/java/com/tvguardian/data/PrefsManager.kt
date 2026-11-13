@@ -89,7 +89,7 @@ class PrefsManager(context: Context) {
 
     fun recordWrongQuestion(q: Question) {
         val list = loadWrongList().toMutableList()
-        val idx = list.indexOfFirst { it.q == q.q }
+        val idx = list.indexOfFirst { it.question == q.q }
         if (idx >= 0) {
             list[idx] = list[idx].copy(wrong_count = list[idx].wrong_count + 1)
         } else {
