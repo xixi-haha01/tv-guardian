@@ -110,6 +110,7 @@ class MainActivity : AppCompatActivity(), RemoteControlServer.ActivityLauncher {
 
         // 手机控制地址 + 题库版本
         val ip = IpUtils.getLocalIpAddress(this)
+        val tailscaleIp = IpUtils.getTailscaleIp()
         if (ip != null && server.isRunning()) {
             val versionInfo = try {
                 val stats = QuestionBankLoader.getStats(this)
@@ -119,7 +120,16 @@ class MainActivity : AppCompatActivity(), RemoteControlServer.ActivityLauncher {
             } catch (_: Exception) {
                 "📚 题库加载中..."
             }
-            binding.tvHint.text = "📱 手机控制: http://$ip:${RemoteControlServer.PORT}/\n$versionInfo"
+            // 显示局域网 + Tailscale 地址
+            val sb = StringBuilder()
+            sb.append("📱 局域网控制: http://$ip:${RemoteControlServer.PORT}/\n")
+            if (tailscaleIp != null) {
+                sb.append("🌐 远程控制(Tailscale): http://$tailscaleIp:${RemoteControlServer.PORT}/\n")
+            } else {
+                sb.append("🌐 远程控制: 未装 Tailscale (装后自动显示)\n")
+            }
+            sb.append(versionInfo)
+            binding.tvHint.text = sb.toString()
             binding.tvHint.setTextColor(android.graphics.Color.parseColor("#FFFFD54F"))
         } else if (!server.isRunning()) {
             binding.tvHint.text = "⚠️ 远程服务未启动"
