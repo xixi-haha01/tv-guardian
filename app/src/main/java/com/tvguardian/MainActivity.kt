@@ -213,7 +213,8 @@ class MainActivity : AppCompatActivity(), RemoteControlServer.ActivityLauncher {
             sb.append("#${i + 1} [${wq.subjectName}${wq.gradeName}] 错${wq.wrong_count}次\n")
             sb.append("  Q: ${wq.question}\n")
             val labels = listOf("A", "B", "C", "D")
-            sb.append("  ✓ ${labels[wq.ans]}. ${wq.options[wq.ans]}\n\n")
+            val ansStr = wq.ans.sorted().joinToString { labels[it] }
+            sb.append("  ✓ 答案: $ansStr\n\n")
         }
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("📖 高频错题本")
