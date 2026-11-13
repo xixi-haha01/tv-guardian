@@ -92,7 +92,7 @@ object QuestionBankLoader {
                 if (q.ans !in 0..3) {
                     return false to "第 $idx 题正确答案索引必须是 0-3（当前 ${q.ans}）"
                 }
-                if (q.options.any { it.isBlank() }) {
+                if (q.options.any { opt -> opt.isBlank() }) {
                     return false to "第 $idx 题存在空选项"
                 }
             }
