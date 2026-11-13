@@ -152,6 +152,7 @@
     <div class="status-item" id="sWrongBox"><div class="val" id="sWrong">0/10</div><div class="lbl">累计错误</div></div>
     <div class="status-item gold"><div class="val" id="sNext">--</div><div class="lbl">下次弹题</div></div>
     <div class="status-item"><div class="val" id="sLockMin">20</div><div class="lbl">锁定时长(分)</div></div>
+    <div class="status-item" style="grid-column:1/-1;"><div class="val" id="sSession">--</div><div class="lbl">本次已观看 / 上限(分)</div></div>
   </div>
   <div class="refresh-btn" onclick="refreshAll()">🔄 点击刷新</div>
 </div>
@@ -183,6 +184,16 @@
   <div class="form-row">
     <label>锁定时长</label>
     <input type="number" id="fLockMin" min="1" max="120" placeholder="分钟">
+  </div>
+  <div style="height:1px;background:rgba(255,255,255,0.1);margin:14px 0;"></div>
+  <div style="font-size:13px;color:#ffd54f;margin-bottom:8px;">⏱️ 观看时长限制</div>
+  <div class="form-row">
+    <label>单次观看</label>
+    <input type="number" id="fSessionLimit" min="0" max="480" placeholder="分钟 (0=不限制)">
+  </div>
+  <div class="form-row">
+    <label>休息时长</label>
+    <input type="number" id="fSessionRest" min="1" max="120" placeholder="分钟">
   </div>
   <button class="btn btn-primary" onclick="saveSettings()">💾 保存设置</button>
 </div>
@@ -296,6 +307,15 @@
 
     $('sLockMin').textContent = s.lock_minutes;
 
+    // 观看时长
+    const limit = s.session_limit_minutes || 0;
+    if (limit > 0) {
+      const elapsedMin = Math.floor((s.session_elapsed_seconds || 0) / 60);
+      $('sSession').textContent = elapsedMin + ' / ' + limit;
+    } else {
+      $('sSession').textContent = '不限制';
+    }
+
     // 锁定横幅
     const banner = $('lockBanner');
     if (s.locked) {
@@ -314,6 +334,8 @@
     $('fPerRound').value = s.questions_per_round;
     $('fMaxWrong').value = s.max_wrong_before_lock;
     $('fLockMin').value = s.lock_minutes;
+    $('fSessionLimit').value = s.session_limit_minutes;
+    $('fSessionRest').value = s.session_rest_minutes;
   }
 
   function renderWrong(list) {
@@ -363,7 +385,9 @@
       interval_minutes: parseInt($('fInterval').value),
       questions_per_round: parseInt($('fPerRound').value),
       max_wrong_before_lock: parseInt($('fMaxWrong').value),
-      lock_minutes: parseInt($('fLockMin').value)
+      lock_minutes: parseInt($('fLockMin').value),
+      session_limit_minutes: parseInt($('fSessionLimit').value) || 0,
+      session_rest_minutes: parseInt($('fSessionRest').value)
     };
     const r = await api('/api/settings', 'POST', body);
     toast(r.ok ? '✅ 设置已保存' : '保存失败');
