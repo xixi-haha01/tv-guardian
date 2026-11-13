@@ -106,6 +106,15 @@ class RemoteControlServer(
             put("next_quiz_seconds", nextDiff / 1000)
             put("interval_minutes", prefs.intervalMinutes)
             put("lock_minutes", prefs.lockMinutes)
+            // 观看时长限制
+            val sessionLimit = prefs.sessionLimitMinutes
+            val sessionElapsed = (System.currentTimeMillis() - prefs.sessionStartTimestamp) / 1000
+            put("session_limit_minutes", sessionLimit)
+            put("session_elapsed_seconds", sessionElapsed)
+            put("session_rest_minutes", prefs.sessionRestMinutes)
+            put("session_locked", prefs.sessionLockEndTimestamp > 0)
+            val sessionLockRemain = (prefs.sessionLockEndTimestamp - System.currentTimeMillis()).coerceAtLeast(0)
+            put("session_lock_remain_seconds", sessionLockRemain / 1000)
         }
         return jsonResponse(200, status)
     }
@@ -138,6 +147,9 @@ class RemoteControlServer(
     private fun serveUnlock(): Response {
         prefs.isLocked = false
         prefs.totalWrongCount = 0
+        // 同时解除观看时长锁定
+        prefs.sessionLockEndTimestamp = 0L
+        prefs.sessionStartTimestamp = System.currentTimeMillis()
         // 重新排下次弹题
         prefs.nextQuizTimestamp = System.currentTimeMillis() +
                 prefs.intervalMinutes * 60 * 1000L
@@ -169,6 +181,8 @@ class RemoteControlServer(
             put("max_wrong_before_lock", prefs.maxWrongBeforeLock)
             put("lock_minutes", prefs.lockMinutes)
             put("high_freq_weight", prefs.highFreqWeight)
+            put("session_limit_minutes", prefs.sessionLimitMinutes)
+            put("session_rest_minutes", prefs.sessionRestMinutes)
         }
         return jsonResponse(200, data)
     }
@@ -191,6 +205,12 @@ class RemoteControlServer(
         }
         if (json.has("lock_minutes")) {
             prefs.lockMinutes = json.getInt("lock_minutes").coerceIn(1, 120)
+        }
+        if (json.has("session_limit_minutes")) {
+            prefs.sessionLimitMinutes = json.getInt("session_limit_minutes").coerceIn(0, 480)
+        }
+        if (json.has("session_rest_minutes")) {
+            prefs.sessionRestMinutes = json.getInt("session_rest_minutes").coerceIn(1, 120)
         }
 
         activityLauncher.refreshMainUI()
