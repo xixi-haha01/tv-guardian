@@ -120,6 +120,7 @@ class PrefsManager(context: Context) {
                     question = q.q,
                     options = q.options,
                     ans = q.ans,
+                    type = q.type,
                     exp = q.exp,
                     subject = q.subject,
                     grade = q.grade,
@@ -175,7 +176,8 @@ class PrefsManager(context: Context) {
 data class WrongRecord(
     val question: String,
     val options: List<String>,
-    val ans: Int,
+    val ans: List<Int>,
+    val type: String = "single",
     val exp: String = "",
     val subject: String = "",
     val grade: String = "",
