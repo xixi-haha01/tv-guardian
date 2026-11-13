@@ -46,6 +46,28 @@ class PrefsManager(context: Context) {
             ?: setOf("grade3", "grade4", "grade5")
         set(v) = sp.edit().putStringSet(KEY_GRADES, v).apply()
 
+    // ---- 单次观看时长限制 ----
+
+    /** 单次连续观看最大分钟数，0 表示不限制 */
+    var sessionLimitMinutes: Int
+        get() = sp.getInt(KEY_SESSION_LIMIT, 60)
+        set(v) = sp.edit().putInt(KEY_SESSION_LIMIT, v).apply()
+
+    /** 观看时长用完后需休息的分钟数 */
+    var sessionRestMinutes: Int
+        get() = sp.getInt(KEY_SESSION_REST, 10)
+        set(v) = sp.edit().putInt(KEY_SESSION_REST, v).apply()
+
+    /** 本次连续观看开始时间戳（每次解锁/答题完成后重置） */
+    var sessionStartTimestamp: Long
+        get() = sp.getLong(KEY_SESSION_START, System.currentTimeMillis())
+        set(v) = sp.edit().putLong(KEY_SESSION_START, v).apply()
+
+    /** 观看时长锁定结束时间戳，0 表示未锁定 */
+    var sessionLockEndTimestamp: Long
+        get() = sp.getLong(KEY_SESSION_LOCK_END, 0L)
+        set(v) = sp.edit().putLong(KEY_SESSION_LOCK_END, v).apply()
+
     // ---- 运行时状态 ----
 
     var totalWrongCount: Int
@@ -142,6 +164,10 @@ class PrefsManager(context: Context) {
         private const val KEY_USER_Q_JSON = "user_questions_json"
         private const val KEY_Q_VERSION = "questions_version"
         private const val KEY_IS_CUSTOM_Q = "is_custom_questions"
+        private const val KEY_SESSION_LIMIT = "session_limit_minutes"
+        private const val KEY_SESSION_REST = "session_rest_minutes"
+        private const val KEY_SESSION_START = "session_start_ts"
+        private const val KEY_SESSION_LOCK_END = "session_lock_end_ts"
     }
 }
 
