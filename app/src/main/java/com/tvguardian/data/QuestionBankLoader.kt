@@ -89,8 +89,17 @@ object QuestionBankLoader {
                 if (q.options.size != 4) {
                     return false to "第 $idx 题选项数量必须是 4 个（当前 ${q.options.size}）"
                 }
-                if (q.ans !in 0..3) {
-                    return false to "第 $idx 题正确答案索引必须是 0-3（当前 ${q.ans}）"
+                if (q.ans.isEmpty()) {
+                    return false to "第 $idx 题正确答案不能为空"
+                }
+                if (q.ans.any { it !in 0..3 }) {
+                    return false to "第 $idx 题正确答案索引必须在 0-3"
+                }
+                if (q.type == "single" && q.ans.size != 1) {
+                    return false to "第 $idx 题是单选题，正确答案只能有 1 个"
+                }
+                if (q.type == "multiple" && q.ans.size < 2) {
+                    return false to "第 $idx 题是多选题，正确答案至少 2 个"
                 }
                 if (q.options.any { opt -> opt.isBlank() }) {
                     return false to "第 $idx 题存在空选项"
@@ -170,6 +179,7 @@ object QuestionBankLoader {
                     q = wq.question,
                     options = wq.options,
                     ans = wq.ans,
+                    type = wq.type,
                     exp = wq.exp,
                     subject = wq.subject,
                     grade = wq.grade,
