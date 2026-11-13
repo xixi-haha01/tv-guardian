@@ -44,4 +44,30 @@ object IpUtils {
 
         return null
     }
+
+    /**
+     * 获取 Tailscale 虚拟 IP（100.64.0.0/10 网段）
+     * 用于不同 WiFi/外网下远程控制
+     */
+    fun getTailscaleIp(): String? {
+        try {
+            val interfaces = Collections.list(NetworkInterface.getNetworkInterfaces())
+            for (intf in interfaces) {
+                val addrs = Collections.list(intf.inetAddresses)
+                for (addr in addrs) {
+                    val host = addr.hostAddress ?: continue
+                    if (addr.isLoopbackAddress || host.contains(":")) continue
+                    // Tailscale 网段：100.64.0.0 ~ 100.127.255.255
+                    if (host.startsWith("100.")) {
+                        val parts = host.split(".")
+                        if (parts.size == 4) {
+                            val second = parts[1].toIntOrNull() ?: continue
+                            if (second in 64..127) return host
+                        }
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+        return null
+    }
 }
