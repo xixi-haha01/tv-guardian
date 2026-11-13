@@ -74,11 +74,11 @@ object QuestionBankLoader {
             val bank = json.decodeFromString(Bank.serializer(), jsonStr)
 
             // 检查结构：至少一个科目有题目
-            val allQ = listOfNotNull(
+            val allQ = listOf(
                 bank.math.values.flatten(),
                 bank.chinese.values.flatten(),
                 bank.english.values.flatten()
-            )
+            ).flatten()
             if (allQ.isEmpty()) return false to "题库至少需要一个科目有题目"
 
             // 检查每道题的基本结构
