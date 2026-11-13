@@ -63,7 +63,7 @@ class RemoteControlServer(
             val method = session.method
 
             // CORS（允许手机浏览器跨域）
-            session.setRemoteHost(session.remoteIpAddress)
+            // session.remoteIpAddress 已由 NanoHTTPD 自动设置
 
             when {
                 uri == "/" || uri == "/control.html" -> serveControlPage()
