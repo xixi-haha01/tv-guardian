@@ -16,6 +16,7 @@ import com.tvguardian.model.Question
 
 /**
  * 全屏答题界面 —— 不可退出（拦截返回键）
+ * 支持单选/多选，答10道对<5道则锁定
  */
 class QuizActivity : AppCompatActivity() {
 
@@ -24,8 +25,8 @@ class QuizActivity : AppCompatActivity() {
 
     private var questions: List<Question> = emptyList()
     private var currentIndex = 0
-    private val userAnswers = mutableListOf<Int>()
-    private var selectedOption = -1
+    private val userAnswers = mutableListOf<Set<Int>>()   // 每题用户选择的索引集合
+    private val currentSelected = mutableSetOf<Int>()      // 当前题已选
     private val optionLabels = listOf("A", "B", "C", "D")
     private val optionColors = intArrayOf(
         Color.parseColor("#FF42A5F5"),  // blue
@@ -41,10 +42,11 @@ class QuizActivity : AppCompatActivity() {
 
         prefs = PrefsManager(this)
 
-        // 生成题目
+        // 固定答 10 道题
+        val count = 10
         questions = QuestionBankLoader.selectQuestions(
             context = this,
-            count = prefs.questionsPerRound,
+            count = count,
             subjects = prefs.selectedSubjects,
             grades = prefs.selectedGrades,
             highFreqWeight = prefs.highFreqWeight
@@ -59,9 +61,7 @@ class QuizActivity : AppCompatActivity() {
     }
 
     /** 拦截所有返回键，不允许退出 */
-    override fun onBackPressed() {
-        // 吞掉
-    }
+    override fun onBackPressed() {}
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         if (keyCode == KeyEvent.KEYCODE_BACK) return true
@@ -70,16 +70,16 @@ class QuizActivity : AppCompatActivity() {
 
     private fun showCurrent() {
         val q = questions[currentIndex]
-        selectedOption = -1
-        binding.btnSubmit.isEnabled = false
+        currentSelected.clear()
+        updateSubmitButton()
 
         // 进度
         binding.tvProgress.text = "进度：${currentIndex + 1} / ${questions.size}"
 
-        // 标题
+        // 标题 + 题型
         val sourceTag = if (q.from_wrong) " [错题重练]" else ""
         binding.tvHeader.text =
-            "第 ${currentIndex + 1} 题  ${q.subjectName} ${q.gradeName}${sourceTag}"
+            "第 ${currentIndex + 1} 题  ${q.typeLabel}  ${q.subjectName} ${q.gradeName}${sourceTag}"
 
         binding.tvQuestion.text = q.q
 
@@ -95,14 +95,11 @@ class QuizActivity : AppCompatActivity() {
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    topMargin = 20
-                }
+                ).apply { topMargin = 20 }
                 setPadding(40, 28, 40, 28)
                 setBackgroundColor(Color.parseColor("#FF37474F"))
             }
 
-            // 选中标圈
             val circle = TextView(this).apply {
                 text = optionLabels[i]
                 textSize = 28f
@@ -114,34 +111,25 @@ class QuizActivity : AppCompatActivity() {
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    rightMargin = 32
-                }
+                ).apply { rightMargin = 32 }
             }
 
             val label = TextView(this).apply {
                 text = optText
                 textSize = 28f
                 setTextColor(Color.parseColor("#FFECEFF1"))
-                layoutParams = LinearLayout.LayoutParams(
-                    0,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    1f
-                )
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             }
 
             row.addView(circle)
             row.addView(label)
 
-            // D-pad 焦点
             row.isFocusable = true
             row.isFocusableInTouchMode = true
-            row.setOnClickListener {
-                selectOption(i)
-            }
+            row.setOnClickListener { toggleOption(i) }
             row.setOnFocusChangeListener { v, hasFocus ->
                 row.setBackgroundColor(
-                    if (hasFocus || selectedOption == i) Color.parseColor("#FF1565C0")
+                    if (hasFocus || i in currentSelected) Color.parseColor("#FF1565C0")
                     else Color.parseColor("#FF37474F")
                 )
             }
@@ -150,7 +138,7 @@ class QuizActivity : AppCompatActivity() {
                         KeyEvent.KEYCODE_DPAD_CENTER,
                         KeyEvent.KEYCODE_ENTER
                     )) {
-                    selectOption(i)
+                    toggleOption(i)
                     true
                 } else false
             }
@@ -159,30 +147,50 @@ class QuizActivity : AppCompatActivity() {
         }
     }
 
-    private fun selectOption(index: Int) {
-        selectedOption = index
-        binding.btnSubmit.isEnabled = true
-        // 高亮选中行
+    private fun toggleOption(index: Int) {
+        val q = questions[currentIndex]
+        if (q.isMultiple) {
+            // 多选：切换选中状态
+            if (index in currentSelected) currentSelected.remove(index)
+            else currentSelected.add(index)
+        } else {
+            // 单选：替换
+            currentSelected.clear()
+            currentSelected.add(index)
+        }
+        updateSubmitButton()
+        refreshOptionHighlights()
+    }
+
+    private fun refreshOptionHighlights() {
         for (i in 0 until binding.optionsContainer.childCount) {
             val row = binding.optionsContainer.getChildAt(i) as LinearLayout
             row.setBackgroundColor(
-                if (i == index) Color.parseColor("#FF1976D2")
+                if (i in currentSelected) Color.parseColor("#FF1976D2")
                 else Color.parseColor("#FF37474F")
             )
         }
     }
 
+    private fun updateSubmitButton() {
+        val q = questions[currentIndex]
+        // 单选必须选1个，多选至少1个
+        binding.btnSubmit.isEnabled = currentSelected.isNotEmpty()
+    }
+
     private fun finishAndBack() {
-        // 答题完成：统计、记录错题、检查锁定
-        var wrongCount = 0
+        // 统计对错
+        var correctCount = 0
         questions.forEachIndexed { i, q ->
-            if (userAnswers[i] != q.ans) {
-                wrongCount++
+            val userAns = userAnswers[i]
+            val isRight = userAns == q.ans.toSet()
+            if (isRight) {
+                correctCount++
+            } else {
                 prefs.recordWrongQuestion(q)
             }
         }
 
-        prefs.totalWrongCount += wrongCount
         prefs.roundCount += 1
 
         // 重置下次弹题时间 & 观看时长计时
@@ -190,8 +198,9 @@ class QuizActivity : AppCompatActivity() {
                 prefs.intervalMinutes * 60 * 1000L
         prefs.sessionStartTimestamp = System.currentTimeMillis()
 
-        // 检查锁定
-        if (prefs.totalWrongCount >= prefs.maxWrongBeforeLock) {
+        // 答对少于 5 道 → 锁定 20 分钟
+        val passThreshold = 5
+        if (correctCount < passThreshold) {
             prefs.isLocked = true
             prefs.lockEndTimestamp = System.currentTimeMillis() +
                     prefs.lockMinutes * 60 * 1000L
@@ -202,11 +211,10 @@ class QuizActivity : AppCompatActivity() {
         }
 
         // 显示结果 dialog 再返回
-        showResultDialog(wrongCount)
+        showResultDialog(correctCount)
     }
 
-    private fun showResultDialog(wrongCount: Int) {
-        val correctCount = questions.size - wrongCount
+    private fun showResultDialog(correctCount: Int) {
         val pct = if (questions.isNotEmpty()) correctCount * 100 / questions.size else 0
 
         val sb = StringBuilder()
@@ -215,12 +223,12 @@ class QuizActivity : AppCompatActivity() {
 
         questions.forEachIndexed { i, q ->
             val userAns = userAnswers[i]
-            val isRight = userAns == q.ans
+            val isRight = userAns == q.ans.toSet()
             val mark = if (isRight) "✓" else "✗"
-            sb.append("$mark 第${i + 1}题 ${q.subjectName}${q.gradeName}\n")
+            sb.append("$mark 第${i + 1}题 ${q.typeLabel} ${q.subjectName}${q.gradeName}\n")
             if (!isRight) {
-                sb.append("   你选: ${optionLabels[userAns]}. ${q.options[userAns]}\n")
-                sb.append("   正确: ${optionLabels[q.ans]}. ${q.options[q.ans]}\n")
+                sb.append("   你选: ${userAns.sorted().joinToString { optionLabels[it] }}\n")
+                sb.append("   正确: ${q.ans.sorted().joinToString { optionLabels[it] }}\n")
             }
             if (q.exp.isNotEmpty()) {
                 sb.append("   💡 ${q.exp}\n")
@@ -231,17 +239,15 @@ class QuizActivity : AppCompatActivity() {
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("📊 本次答题结果")
             .setMessage(sb.toString())
-            .setPositiveButton("继续看电视") { _, _ ->
-                finish()
-            }
+            .setPositiveButton("继续看电视") { _, _ -> finish() }
             .setCancelable(false)
             .show()
     }
 
     // ---- 按钮 ----
     fun onSubmitClick(view: View) {
-        if (selectedOption < 0) return
-        userAnswers.add(selectedOption)
+        if (currentSelected.isEmpty()) return
+        userAnswers.add(currentSelected.toSet())
         if (currentIndex < questions.size - 1) {
             currentIndex++
             showCurrent()
