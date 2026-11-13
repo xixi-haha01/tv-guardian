@@ -185,9 +185,10 @@ class QuizActivity : AppCompatActivity() {
         prefs.totalWrongCount += wrongCount
         prefs.roundCount += 1
 
-        // 重置下次弹题时间
+        // 重置下次弹题时间 & 观看时长计时
         prefs.nextQuizTimestamp = System.currentTimeMillis() +
                 prefs.intervalMinutes * 60 * 1000L
+        prefs.sessionStartTimestamp = System.currentTimeMillis()
 
         // 检查锁定
         if (prefs.totalWrongCount >= prefs.maxWrongBeforeLock) {
